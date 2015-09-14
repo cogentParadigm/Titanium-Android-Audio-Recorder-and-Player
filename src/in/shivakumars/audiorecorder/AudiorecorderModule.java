@@ -10,8 +10,10 @@ package in.shivakumars.audiorecorder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 
 import org.appcelerator.kroll.KrollModule;
+import org.appcelerator.kroll.KrollFunction;
 import org.appcelerator.kroll.annotations.Kroll;
 
 import org.appcelerator.titanium.TiApplication;
@@ -51,10 +53,17 @@ public class AudiorecorderModule extends KrollModule {
 		// created
 	}
 
-	private void playAudioFile(String path) {
+	private void playAudioFile(String path, final KrollFunction callback) {
 		if (!playing) {
 			playing = true;
 			mPlayer = new MediaPlayer();
+			mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+				public void onCompletion(MediaPlayer mp) {
+					Log.d(LCAT, "playing completed");
+					stopPlaying();
+					callback.call(getKrollObject(), new HashMap<String, String>());
+				}
+			});
 			try {
 				mPlayer.setDataSource(path);
 				mPlayer.prepare();
@@ -85,11 +94,16 @@ public class AudiorecorderModule extends KrollModule {
 				mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
 			}
 			if (useSDCard) {
-				audioStoragePath = Environment.getExternalStorageDirectory()
-						.getPath()
-						+ "/"
-						+ TiApplication.getAppCurrentActivity()
-								.getPackageName() + "/" + fileName;
+				String packageName = TiApplication.getAppRootOrCurrentActivity().getPackageName();
+
+                String sdCardPath = Environment.getExternalStorageDirectory().getPath();
+                File audioDirectory = new File(sdCardPath, packageName+ "/audio");
+
+                if (!audioDirectory.exists()) {
+                    audioDirectory.mkdirs();
+                }
+
+                audioStoragePath = (audioDirectory.getAbsolutePath() + "/" + fileName);
 			} else {
 				ContextWrapper cw = new ContextWrapper(
 						TiApplication.getAppRootOrCurrentActivity());
@@ -138,14 +152,15 @@ public class AudiorecorderModule extends KrollModule {
 	@Kroll.method
 	public String stopRecording() {
 		Log.d(LCAT, "stop Rec called");
+		Log.d(LCAT, audioStoragePath);
 		stopRecordingAudio();
 		return audioStoragePath;
 	}
 
 	@Kroll.method
-	public void playAudio(String fileName) {
+	public void playAudio(String fileName, KrollFunction callback) {
 		Log.d(LCAT, "start Play called");
-		playAudioFile(fileName);
+		playAudioFile(fileName, callback);
 	}
 
 	@Kroll.method
@@ -157,7 +172,7 @@ public class AudiorecorderModule extends KrollModule {
 	@Kroll.method
 	public Boolean isPlayerPlaying() {
 		// Log.d(LCAT, "stop Play called");
-		return mPlayer.isPlaying();
+		return this.playing;
 	}
 
 }
