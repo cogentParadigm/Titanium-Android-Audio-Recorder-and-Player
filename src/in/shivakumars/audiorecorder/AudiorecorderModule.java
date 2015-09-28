@@ -105,11 +105,9 @@ public class AudiorecorderModule extends KrollModule {
 
                 audioStoragePath = (audioDirectory.getAbsolutePath() + "/" + fileName);
 			} else {
-				ContextWrapper cw = new ContextWrapper(
-						TiApplication.getAppRootOrCurrentActivity());
-				File directory = cw.getDir("audioDir", Context.MODE_PRIVATE);
-				audioStoragePath = new File(directory, fileName)
-						.getAbsolutePath();
+				ContextWrapper cw = new ContextWrapper(TiApplication.getAppRootOrCurrentActivity());
+				File directory = cw.getDir("appdata", Context.MODE_PRIVATE);
+				audioStoragePath = new File(directory, fileName).getAbsolutePath();
 			}
 
 			if (!audioStoragePath.contains("mp4"))
